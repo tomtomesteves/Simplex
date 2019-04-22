@@ -23,12 +23,12 @@ tuple<
         }
 
         std::vector< std::vector<float> > certificado;
-        certificado.resize(n_res);
-        for(int i = 0 ; i < n_res ; i++){
+        certificado.resize(n_res+1);
+        certificado[0].resize(n_res);
+        for(int i = 1 ; i < certificado.size() ; i++){
             certificado[i].resize(n_res);
-            certificado[i][i] = 1;
+            certificado[i][i-1] = 1;
         }
-
 
         return {custo, condicoes, certificado};
 }
@@ -66,9 +66,9 @@ void get_condicoes(ifstream& data, int n_var, int n_res, std::vector< std::vecto
         counter = 0;
         while (counter < (n_var + 1)) {
             int pos = line.find(" ");
-            int teste = atof(line.substr(0,pos).c_str());
+            int aux = atof(line.substr(0,pos).c_str());
             line.erase(0,pos+1);
-            condicoes[counter_res][counter] = teste;
+            condicoes[counter_res][counter] = aux;
             counter++;
         }
         counter_res++;
@@ -95,9 +95,6 @@ tuple<
 
     get_condicoes(data,n_var,n_res,condicoes);
 
-    cout << "n_var: " << n_var << " " << "n_res: " << n_res <<endl;
-    cout << endl << endl;
-
     for (int j = 0; j < custo.size(); j++) {
         std::cout << custo[j] << ' ';
     }
@@ -120,5 +117,7 @@ tuple<
         }
         cout << endl;
     }
+    cout << "-------------------------------------------------" << endl;
+
     return {custo, condicoes, certificado};
 }
