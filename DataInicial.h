@@ -14,7 +14,7 @@ tuple<
     std::vector< std::vector<float> >
     > create_vecs(int n_var, int n_res){
         std::vector<float> custo;
-        custo.resize(n_var);
+        custo.resize(n_var+1);
 
         std::vector< std::vector<float> > condicoes;
         condicoes.resize(n_res);
@@ -95,29 +95,6 @@ tuple<
 
     get_condicoes(data,n_var,n_res,condicoes);
 
-    for (int j = 0; j < custo.size(); j++) {
-        std::cout << custo[j] << ' ';
-    }
-    cout << endl;
-
-    cout << endl << endl;
-
-    for(int i=0; i<condicoes.size(); ++i){
-        for (int j = 0; j < condicoes[i].size(); j++) {
-            std::cout << condicoes[i][j] << ' ';
-        }
-        cout << endl;
-    }
-
-    cout << endl << endl;
-
-    for(int i=0; i<certificado.size(); ++i){
-        for (int j = 0; j < certificado[i].size(); j++) {
-            std::cout << certificado[i][j] << ' ';
-        }
-        cout << endl;
-    }
-    cout << "-------------------------------------------------" << endl;
 
     return {custo, condicoes, certificado};
 }

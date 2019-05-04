@@ -9,14 +9,6 @@
 
 using namespace std;
 
-void check_custo(std::vector<float>& custo){
-    for (int i = 0; i < custo.size(); i++) {
-        if (custo[i] < 0) {
-            std::cout << "inviavel" << endl <<"vetor custo < 0" << '\n';
-        }
-    }
-}
-
 void printall(
     std::vector<float>& custo,
     std::vector< std::vector<float> >& condicoes,
@@ -47,6 +39,140 @@ void printall(
     }
 }
 
+void pivotation(
+    std::vector<float>& custo,
+    std::vector< std::vector<float> >& condicoes,
+    std::vector< std::vector<float> >& certificado,
+    int pivot_x, int pivot_y){
+
+    int pivot = condicoes[pivot_y][pivot_x];
+    cout << "pivot: " << pivot << endl;
+    cout << "x : " << pivot_x << endl;
+    cout << "y : " << pivot_y << endl;
+    for (int i = 0; i < certificado[pivot_y].size(); i++) {
+        certificado[pivot_y][i] = certificado[pivot_y][i]/pivot;
+    }
+    for (int i = 0; i < condicoes[pivot_y].size(); i++) {
+        condicoes[pivot_y][i] = condicoes[pivot_y][i]/pivot;
+    }
+    bool positivo = false;
+    for (int i = 0; i < condicoes.size(); i++) {
+      if (i != pivot_y){
+        if (condicoes[i][pivot_x] != 0) {
+          int mod = condicoes[i][pivot_x]/condicoes[pivot_y][pivot_x];
+          if (condicoes[i][pivot_x]-(mod*condicoes[pivot_y][pivot_x]) == 0) {
+            for (int j = 0; j < condicoes[i].size(); j++) {
+              condicoes[i][j] = condicoes[i][j]-(mod*condicoes[pivot_y][j]);
+            }
+            for (int j = 0; j < certificado[i].size(); j++) {
+              certificado[i+1][j] = certificado[i+1][j]-(mod*certificado[pivot_y+1][j]);
+            }
+          }
+          else {
+            for (int j = 0; j < condicoes[i].size(); j++) {
+              condicoes[i][j] = condicoes[i][j]+(mod*condicoes[pivot_y][j]);
+            }
+            for (int j = 0; j < certificado[i].size(); j++) {
+              certificado[i+1][j] = certificado[i+1][j]+(mod*certificado[pivot_y+1][j]);
+            }
+          }
+        }
+      }
+    }
+    int mod;
+    if (custo[pivot_x] != 0) {
+      mod = custo[pivot_x]/condicoes[pivot_y][pivot_x];
+      for (int j = 0; j < custo.size(); j++) {
+        if (custo[j]+(mod*condicoes[pivot_y][j]) == 0) {
+          custo[j] = custo[j]+(mod*condicoes[pivot_y][j]);
+          positivo = true;
+        }
+        else {
+          custo[j] = custo[j]-(mod*condicoes[pivot_y][j]);
+        }
+      }
+    }
+    if (positivo) {
+      for (int i = 0; i < certificado[0].size(); i++) {
+        certificado[0][i] = certificado[0][i]+(mod*certificado[pivot_y+1][i]);
+      }
+    }
+    else {
+      for (int i = 0; i < certificado[0].size(); i++) {
+        certificado[0][i] = certificado[0][i]-(mod*certificado[pivot_y+1][i]);
+      }
+    }
+}
+
+
+float simplex(
+    std::vector<float>& custo,
+    std::vector< std::vector<float> >& condicoes,
+    std::vector< std::vector<float> >& certificado){
+    bool inviavel = true;
+    for (int i = 0; i < custo.size()-1; i++) {
+        if(custo[i] < 0){
+            float div = 999999;
+            int pivot = 0;
+            for (int j = 0; j < condicoes.size(); j++) {
+              if (condicoes[j][i] > 0 && div > condicoes[j][condicoes[j].size()]/condicoes[j][i]) {
+                  div = condicoes[j][condicoes[j].size()]/condicoes[j][i];
+                  pivot = j;
+                  inviavel = false;
+              }
+            }
+            if(!inviavel){
+              pivotation(custo, condicoes, certificado, pivot, i);
+              printall(custo,condicoes,certificado);
+            }
+            if(inviavel){
+              cout << "ilimitada" << endl;
+              return {};
+            }
+            i = 0;
+        }
+    }
+    return custo[custo.size()-1];
+}
+
+void check_custo(std::vector<float>& custo){
+    for (int i = 0; i < custo.size(); i++) {
+        if (custo[i] < 0) {
+            std::cout << "inviavel" << endl <<"vetor custo < 0" << '\n';
+        }
+    }
+}
+
+std::vector<float> pl_auxiliar(
+    std::vector<float> custo,
+    std::vector< std::vector<float> > condicoes,
+    std::vector< std::vector<float> > certificado){
+      for (int i = 0; i < custo.size(); i++) {
+        custo[i] = 0;
+      }
+      custo.resize(custo.size()+condicoes.size(), -1);
+      int old = condicoes.size();
+      for (int i = 0; i < old; i++) {
+        condicoes[i].resize(condicoes[i].size() + condicoes.size());
+      }
+      for (int i = old; i < condicoes[0].size(); i++) {
+        condicoes[i][i] = 1;
+      }
+      for (int i = 0; i < custo.size(); i++) {
+        int sum = 0;
+        for (int j = 0; j < condicoes.size(); j++) {
+          sum += condicoes[j][i];
+        }
+        custo[i] += sum;
+      }
+      float vo = simplex(custo, condicoes, certificado);
+      if (vo == 0 ){
+        return certificado[0];
+      }
+      else {
+        return {};
+      }
+    }
 
 bool check_valid_base(std::vector<float>& custo, std::vector< std::vector<float> >& condicoes){
     bool test,cond_ok ;
@@ -76,95 +202,54 @@ bool check_valid_base(std::vector<float>& custo, std::vector< std::vector<float>
     return false;
 }
 
-void fpi_base_canonica(std::vector<float>& custo , std::vector< std::vector<float> >& condicoes, int n_res){
+void fpi_base_canonica(
+    std::vector<float>& custo,
+    std::vector< std::vector<float> >& condicoes,
+    std::vector< std::vector<float> >& certificado,
+    int n_res){
     if (!check_valid_base(custo,condicoes)) {
         custo.resize(custo.size()+n_res);
 
 
-        int old_size = condicoes.size();
+        int old_size = condicoes[0].size();
         for (int i = 0; i < condicoes.size(); i++) {
-            condicoes[i].resize(old_size+n_res+1);
-            condicoes[i][condicoes[i].size()-1] = condicoes[i][old_size];
-            condicoes[i][old_size] = 0;
+            condicoes[i].resize(old_size+n_res);
+            condicoes[i][condicoes[i].size()-1] = condicoes[i][old_size-1];
+            condicoes[i][old_size-1] = 0;
         }
 
-        int counter = condicoes.size();
         for (int i = 0; i < condicoes.size(); i++) {
-            condicoes[i][counter] = 1;
-            counter += 1;
+            condicoes[i][old_size-1] = 1;
+            old_size += 1;
         }
     }
     for (int i = 0; i < custo.size(); i++) {
         if (custo[i] != 0) {
             custo[i] = -custo[i];
+          }
     }
-}
-    //// VERIFICAR SE B TEM ALGUM VALOR NEGATIVO, SE SIM PL AUXILIAR
-}
-
-void pivotation(
-    std::vector<float>& custo,
-    std::vector< std::vector<float> >& condicoes,
-    std::vector< std::vector<float> >& certificado,
-    int pivot_x, int pivot_y){
-
-    int pivot = condicoes[pivot_y][pivot_x];
-    cout << "pivot: " << pivot << endl;
-    cout << "x : " << pivot_x << endl;
-    cout << "y : " << pivot_y << endl;
-    for (int i = 0; i < certificado[pivot_y].size(); i++) {
-        certificado[pivot_y][i] = certificado[pivot_y][i]/pivot;
-    }
-    for (int i = 0; i < condicoes[pivot_y].size(); i++) {
-        condicoes[pivot_y][i] = condicoes[pivot_y][i]/pivot;
-    }
-    for (int i = 0; i < condicoes.size() && i != pivot_y; i++) {
-        int mod = fmod(condicoes[i][pivot_x],condicoes[pivot_y][pivot_x]);
-        cout << "mod >> " << mod << endl;
-        for (int j = 0; j < condicoes[i].size(); j++) {
-            condicoes[i][j] = condicoes[i][j]/(mod*condicoes[pivot_y][j]);
-        }
+    for (int i = 0; i < condicoes.size(); i++) {
+      if (condicoes[i][condicoes[i].size()-1] < 0) {
+        auto viavel = pl_auxiliar(custo,condicoes,certificado);
+        break;
+      }
     }
 }
 
 
-void simplex(
-    std::vector<float>& custo,
-    std::vector< std::vector<float> >& condicoes,
-    std::vector< std::vector<float> >& certificado){
 
-    for (int i = 0; i < custo.size(); i++) {
-        if(custo[i] < 0){
-            float div = 99999;
-            if (condicoes[0][i] > 0) {
-                div = condicoes[0][condicoes[0].size()]/condicoes[0][i];
-            }
-            int pivot = 0;
-            for (int j = 1; j < condicoes.size(); j++) {
-                if (condicoes[j][i] > 0) {
-                    if (div > condicoes[j][condicoes[j].size()]/condicoes[j][i]) {
-                        pivot = j;
-                        div = condicoes[j][condicoes[j].size()]/condicoes[j][i];
-                    }
-                }
-            }
-            pivotation(custo, condicoes, certificado, pivot, i);
-            printall(custo,condicoes,certificado);
-        }
-    }
-}
+
 
 void simplex_init(
     std::vector<float> custo,
     std::vector< std::vector<float> > condicoes,
     std::vector< std::vector<float> > certificado){
-
-    fpi_base_canonica(custo, condicoes, condicoes.size());
-    printall(custo,condicoes,certificado);
-
-    simplex(custo, condicoes, certificado);
-
     // printall(custo,condicoes,certificado);
 
+    fpi_base_canonica(custo, condicoes,certificado ,condicoes.size());
+    printall(custo,condicoes,certificado);
 
+    float vo = simplex(custo, condicoes, certificado);
+
+    cout << "saiuuuuuuuuuuu" << endl;
 }
