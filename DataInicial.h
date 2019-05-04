@@ -28,8 +28,7 @@ tuple<
         for(int i = 1 ; i < certificado.size() ; i++){
             certificado[i].resize(n_res);
             certificado[i][i-1] = 1;
-            certificado[0][i-1] = 1;
-        }
+          }
 
         return {custo, condicoes, certificado};
 }
@@ -118,5 +117,7 @@ tuple<
         }
         cout << endl;
     }
+    cout << "-------------------------------------------------" << endl;
+
     return {custo, condicoes, certificado};
 }
