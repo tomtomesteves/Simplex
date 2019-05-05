@@ -147,29 +147,43 @@ std::vector<float> pl_auxiliar(
     std::vector<float> custo,
     std::vector< std::vector<float> > condicoes,
     std::vector< std::vector<float> > certificado){
-      for (int i = 0; i < custo.size(); i++) {
+      printall(custo, condicoes, certificado);
+
+      int custo_old_size = custo.size();
+      custo.resize(custo.size()+condicoes.size());
+      for (int i = 0; i < custo_old_size-1; i++) {
         custo[i] = 0;
       }
-      custo.resize(custo.size()+condicoes.size(), -1);
+      for (int i = custo_old_size-1; i < custo.size()-1; i++) {
+        custo[i] = -1;
+      }
       int old = condicoes.size();
+      int old_col = condicoes[0].size();
       for (int i = 0; i < old; i++) {
         condicoes[i].resize(condicoes[i].size() + condicoes.size());
+        condicoes[i][condicoes[i].size()-1] = condicoes[i][old_col-1];
       }
-      for (int i = old; i < condicoes[0].size(); i++) {
-        condicoes[i][i] = 1;
+      for (int i = 0; i < condicoes.size(); i++) {
+        condicoes[i][i+old_col-1] = 1;
       }
-      for (int i = 0; i < custo.size(); i++) {
+
+      for (int i = 0; i < custo.size()-1; i++) {
         int sum = 0;
-        for (int j = 0; j < condicoes.size(); j++) {
+        for (int j = 0; j < condicoes.size()-1; j++) {
           sum += condicoes[j][i];
         }
         custo[i] += sum;
       }
+      cout << "testando pl aux" << endl;
+      printall(custo, condicoes, certificado);
       float vo = simplex(custo, condicoes, certificado);
       if (vo == 0 ){
+        cout << vo <<  "  uhulleeess" << endl;
         return certificado[0];
       }
       else {
+        cout << "deu ruimmm" << endl;
+
         return {};
       }
     }
@@ -230,6 +244,7 @@ void fpi_base_canonica(
     }
     for (int i = 0; i < condicoes.size(); i++) {
       if (condicoes[i][condicoes[i].size()-1] < 0) {
+        cout << "criando aux" << endl;
         auto viavel = pl_auxiliar(custo,condicoes,certificado);
         break;
       }
