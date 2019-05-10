@@ -39,11 +39,36 @@ void printall(
     }
 }
 
+tuple<
+    std::vector<float>,
+    std::vector< std::vector<float> >,
+    std::vector< std::vector<float> >
+    > create_vecs_dual(int n_var, int n_res){
+
+        std::vector<float> custo;
+        custo.resize(n_var+1);
+        std::vector< std::vector<float> > condicoes;
+        condicoes.resize(n_var);
+        for(int i = 0 ; i < n_res ; i++){
+            condicoes[i].resize(n_res+1);
+        }
+
+        std::vector< std::vector<float> > certificado;
+        certificado.resize(n_var+1);
+        certificado[0].resize(n_var);
+        for(int i = 1 ; i < certificado.size() ; i++){
+            certificado[i].resize(n_var);
+            certificado[i][i-1] = 1;
+          }
+
+        return {custo, condicoes, certificado};
+}
+
 void pivotation(
     std::vector<float>& custo,
     std::vector< std::vector<float> >& condicoes,
     std::vector< std::vector<float> >& certificado,
-    int pivot_x, int pivot_y){
+    int pivot_y, int pivot_x){
 
     int pivot = condicoes[pivot_y][pivot_x];
     cout << "pivot: " << pivot << endl;
@@ -104,7 +129,6 @@ void pivotation(
     }
 }
 
-
 float simplex(
     std::vector<float>& custo,
     std::vector< std::vector<float> >& condicoes,
@@ -116,6 +140,7 @@ float simplex(
             int pivot = 0;
             for (int j = 0; j < condicoes.size(); j++) {
               if (condicoes[j][i] > 0 && div > condicoes[j][condicoes[j].size()]/condicoes[j][i]) {
+                cout << "antes pivot :: " << condicoes[j][i] << endl;
                   div = condicoes[j][condicoes[j].size()]/condicoes[j][i];
                   pivot = j;
                   inviavel = false;
@@ -143,36 +168,73 @@ void check_custo(std::vector<float>& custo){
     }
 }
 
+void dual(
+  std::vector<float> custo,
+  std::vector< std::vector<float> > condicoes,
+  std::vector< std::vector<float> > certificado) {
+  auto [custo_dual, condicoes_dual , certificado_dual] = create_vecs_dual(custo.size(),condicoes.size());
+  printall(custo_dual,condicoes_dual,certificado_dual);
+
+  for (int i = 0; i < custo_dual.size()-2; i++) {
+    custo_dual[i] = condicoes[i][condicoes.size()-1];
+  }
+  cout << condicoes_dual.size() << endl;
+  for (int i = 0; i < condicoes_dual.size()-1; i++) {
+    condicoes_dual[i][condicoes_dual.size()-1] = custo[i];
+    for (int  j = 0; j < condicoes_dual[i].size()-1; j++) {
+      condicoes_dual[i][j] = condicoes[j][i];
+    }
+  }
+
+}
+
 std::vector<float> pl_auxiliar(
-    std::vector<float> custo,
+  std::vector<float> custo,
     std::vector< std::vector<float> > condicoes,
     std::vector< std::vector<float> > certificado){
+
       printall(custo, condicoes, certificado);
 
       int custo_old_size = custo.size();
       custo.resize(custo.size()+condicoes.size());
-      for (int i = 0; i < custo_old_size-1; i++) {
+      for (int i = 0; i < custo.size(); i++) {
         custo[i] = 0;
       }
       for (int i = custo_old_size-1; i < custo.size()-1; i++) {
         custo[i] = -1;
       }
+      // printall(custo, condicoes, certificado);
+
       int old = condicoes.size();
       int old_col = condicoes[0].size();
       for (int i = 0; i < old; i++) {
         condicoes[i].resize(condicoes[i].size() + condicoes.size());
         condicoes[i][condicoes[i].size()-1] = condicoes[i][old_col-1];
+        condicoes[i][old_col-1] = 0;
+      }
+      for (int i = 0; i < condicoes.size(); i++) {
+        if (condicoes[i][condicoes[i].size()-1] < 0) {
+          for (int j = 0; j < condicoes[i].size(); j++) {
+            if (condicoes[i][j] != 0) {
+              condicoes[i][j] = -condicoes[i][j];
+            }
+          }
+        }
       }
       for (int i = 0; i < condicoes.size(); i++) {
         condicoes[i][i+old_col-1] = 1;
       }
-
       for (int i = 0; i < custo.size()-1; i++) {
         int sum = 0;
-        for (int j = 0; j < condicoes.size()-1; j++) {
+        for (int j = 0; j < condicoes.size(); j++) {
           sum += condicoes[j][i];
         }
         custo[i] += sum;
+      }
+      for (int i = 0; i < custo.size()-1; i++) {
+        if (custo[i] != 0) {
+          custo[i] = -custo[i];
+        }
       }
       cout << "testando pl aux" << endl;
       printall(custo, condicoes, certificado);
@@ -221,6 +283,17 @@ void fpi_base_canonica(
     std::vector< std::vector<float> >& condicoes,
     std::vector< std::vector<float> >& certificado,
     int n_res){
+
+    printall(custo, condicoes, certificado);
+    for (int i = 0; i < condicoes.size(); i++) {
+      if (condicoes[i][condicoes[i].size()-1] < 0) {
+        cout << "criando aux" << endl;
+        auto viavel = pl_auxiliar(custo,condicoes,certificado);
+        // dual(custo,condicoes,certificado);
+
+        break;
+      }
+    }
     if (!check_valid_base(custo,condicoes)) {
         custo.resize(custo.size()+n_res);
 
@@ -242,13 +315,8 @@ void fpi_base_canonica(
             custo[i] = -custo[i];
           }
     }
-    for (int i = 0; i < condicoes.size(); i++) {
-      if (condicoes[i][condicoes[i].size()-1] < 0) {
-        cout << "criando aux" << endl;
-        auto viavel = pl_auxiliar(custo,condicoes,certificado);
-        break;
-      }
-    }
+
+
 }
 
 

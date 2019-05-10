@@ -33,7 +33,6 @@ tuple<
         return {custo, condicoes, certificado};
 }
 
-
 tuple<int, int> get_n(ifstream& data){
     int n_var,n_res;
     string line;
